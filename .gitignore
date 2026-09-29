@@ -1,0 +1,9 @@
+node_modules/
+dist/
+release/
+.vite/
+*.log
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
