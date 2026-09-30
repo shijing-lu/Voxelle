@@ -8,7 +8,7 @@ import type { AudioTrack, MediaInfo } from '../shared/types.js';
 import { chunkRange } from './timeline.js';
 
 export function binary(name: 'ffmpeg' | 'ffprobe'): string {
-  if (app.isPackaged) return join(process.resourcesPath, 'bin', `${name}.exe`);
+  if (app.isPackaged) return join(process.resourcesPath, 'bin', `${name}${process.platform === 'win32' ? '.exe' : ''}`);
   const ffmpegPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : ffmpegStatic.default;
   const value = name === 'ffmpeg' ? ffmpegPath : ffprobeStatic.path;
   if (!value) throw new Error(`缺少 ${name} 可执行文件，请重新安装依赖`);

@@ -19,7 +19,9 @@
     "dev": "npm run build:main && concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev\"",
     "build": "npm run build:main && vite build",
     "fetch:yt-dlp": "node scripts/fetch-yt-dlp.mjs",
-    "package:win": "npm run fetch:yt-dlp && npm run build && electron-builder --win nsis",
+    "package:win": "npm run fetch:yt-dlp && npm run build && electron-builder --config electron-builder.config.cjs --win nsis",
+    "package:linux": "node scripts/fetch-platform-tools.mjs && npm run build && electron-builder --config electron-builder.config.cjs --linux AppImage deb --publish never",
+    "package:mac": "node scripts/fetch-platform-tools.mjs && npm run build && electron-builder --config electron-builder.config.cjs --mac dmg zip --publish never",
     "test": "npm run build:main && node --test",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit"
   },

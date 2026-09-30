@@ -36,19 +36,24 @@ export function parseVideoLink(input: string): VideoLink {
 
 async function executable(): Promise<string> {
   const { app } = await import('electron');
-  if (app.isPackaged) return join(process.resourcesPath, 'bin', 'yt-dlp.exe');
-  const local = join(app.getAppPath(), 'vendor', 'yt-dlp.exe');
+  const file = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
+  if (app.isPackaged) {
+    const bundled = join(process.resourcesPath, 'bin', file);
+    return existsSync(bundled) ? bundled : file;
+  }
+  const local = join(app.getAppPath(), 'vendor', file);
   return existsSync(local) ? local : 'yt-dlp';
 }
 
 async function run(args: string[], signal: AbortSignal): Promise<string> {
   const exe = await executable();
-  const deno = join(exe.slice(0, -'yt-dlp.exe'.length), 'deno.exe');
+  const deno = join(dirname(exe), process.platform === 'win32' ? 'deno.exe' : 'deno');
   const { binary } = await import('./media.js');
   const ffmpegFolder = dirname(binary('ffmpeg'));
+  const runtime = existsSync(deno) ? ['--js-runtimes', `deno:${deno}`] : [];
   return new Promise((resolve, reject) => {
     let output = ''; let errors = '';
-    const child = spawn(exe, ['--no-config', '--no-playlist', '--js-runtimes', `deno:${deno}`, '--ffmpeg-location', ffmpegFolder, '--socket-timeout', '20', '--retries', '3', ...args], { windowsHide: true, signal });
+    const child = spawn(exe, ['--no-config', '--no-playlist', ...runtime, '--ffmpeg-location', ffmpegFolder, '--socket-timeout', '20', '--retries', '3', ...args], { windowsHide: true, signal });
     child.stdout.on('data', chunk => { output += chunk.toString(); if (output.length > 8_000_000) child.kill(); });
     child.stderr.on('data', chunk => { errors += chunk.toString(); errors = errors.slice(-4000); });
     child.on('error', reject);
