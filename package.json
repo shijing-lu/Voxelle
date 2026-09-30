@@ -8,6 +8,7 @@
   "main": "dist/main/main.js",
   "scripts": {
     "site:build": "node scripts/build-site.mjs",
+    "site:build:pages": "node scripts/build-pages.mjs",
     "site:preview": "vite preview --config site/vite.config.mjs",
     "site:dev": "vite --config site/vite.config.mjs",
     "marketing:capture": "electron marketing/capture.cjs",

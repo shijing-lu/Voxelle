@@ -30,7 +30,7 @@ function App() {
   function watch() { setFilmOpen(true); dialog.current.showModal(); }
   function close() { player.current.pause(); dialog.current.close(); setFilmOpen(false); playButton.current.focus(); }
   async function copyHash() { try { await navigator.clipboard.writeText(release.sha256); setCopied(true); } catch { setCopied(false); } }
-  const download = release ? './' + release.url : '#download';
+  const download = release?.url?.startsWith('http') ? release.url : release ? './' + release.url : '#download';
   return <>
     <a className="skip" href="#main">跳至正文</a>
     <header className="nav wrap">

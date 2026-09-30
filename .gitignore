@@ -12,5 +12,6 @@ marketing/audio/
 marketing/output/
 marketing/.capture-profile/
 site/dist/
+site/dist-pages/
 site/public/media/
 site/public/release.json
