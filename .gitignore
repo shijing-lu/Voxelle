@@ -8,3 +8,9 @@ release/
 .env.*
 !.env.example
 vendor/
+marketing/audio/
+marketing/output/
+marketing/.capture-profile/
+site/dist/
+site/public/media/
+site/public/release.json

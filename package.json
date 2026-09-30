@@ -7,6 +7,13 @@
   "description": "Windows desktop video transcription app",
   "main": "dist/main/main.js",
   "scripts": {
+    "site:build": "node scripts/build-site.mjs",
+    "site:preview": "vite preview --config site/vite.config.mjs",
+    "site:dev": "vite --config site/vite.config.mjs",
+    "marketing:capture": "electron marketing/capture.cjs",
+    "marketing:render": "node scripts/render-marketing.mjs",
+    "marketing:fetch": "node scripts/fetch-marketing.mjs",
+    "site:verify": "electron marketing/verify-site.cjs",
     "build:main": "tsc -p tsconfig.main.json && esbuild src/preload/index.ts --bundle --platform=node --format=cjs --outfile=dist/preload.cjs --external:electron",
     "dev": "npm run build:main && concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev\"",
     "build": "npm run build:main && vite build",

@@ -8,6 +8,10 @@ Windows 桌面视频转写应用。支持单文件、批量、文件夹和 YouTu
 
 下载并运行 `release/Voxelle Setup 0.1.0.exe`。本地文件先在“模型设置”填写 ASR API Key，再导入文件或文件夹、选择音轨。公开链接可直接粘贴多个：有字幕时优先提取，无字幕时才用所选 ASR，此时需要 API Key 且可能产生费用。每次加入队列前勾选 TXT、SRT、VTT 中至少一种，默认只生成 TXT。任务和导入批次显示大概进度；完成且生成 TXT 后可在应用内预览、选中部分文字复制或一键复制全文。链接结果保存在设置的统一输出目录；本地结果在源媒体目录。未完成任务会保存并在重启后重试。
 
+## 宣传片与官网
+
+项目包含 Voxelle 横屏和竖屏宣传片、配乐与字体许可记录、界面截图及渲染工程。查看 [制作手册](marketing/README.md) 重新捕获界面并渲染。确认安装包和成片可用后运行 `npm run site:build` 构建下载官网，再运行 `npm run site:preview` 本地预览。构建会把当前 Windows 安装包复制到网站产物，并生成版本、体积和 SHA-256 信息。完整交付记录见 [宣传片与官网交付](docs/marketing-delivery.md)。当前为本地预览，没有配置公开域名或托管服务。
+
 ## 开发
 
 需要 Node.js 22.19+。运行 `npm install`、`npm run fetch:yt-dlp` 后用 `npm run dev` 启动；`npm run build` 构建，`npm run package:win` 生成 Windows 安装包。安装包内置 FFmpeg/FFprobe/yt-dlp/Deno 运行时。服务商会按照自己的规则收费。
