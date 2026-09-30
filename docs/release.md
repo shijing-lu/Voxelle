@@ -5,11 +5,14 @@
 GitHub Actions 位于 `.github/workflows/release.yml`。推送语义化版本标签后，它会在 Windows、Ubuntu 和 macOS runner 上分别构建安装包，并创建 GitHub Release：
 
 ```powershell
-git tag v0.1.0
-git push origin v0.1.0
+npm version patch
+git push origin HEAD:master
+git push origin --tags
 ```
 
 Release 页面会包含 Windows x64 NSIS 安装程序、Linux x64 AppImage/deb，以及 macOS Intel x64 和 Apple Silicon arm64 的 dmg/zip。产物名称包含系统和架构，同时提供 SHA256SUMS.txt。构建过程使用 `npm ci` 和锁文件，发布任务只上传安装文件，所有构建成功后才发布。
+
+`npm version patch` 会同步两个包文件的版本，并自动提交和创建版本标签。执行前先提交功能改动，保持工作区干净；也可以使用 `minor` 或 `major` 升级版本。
 
 ## 平台说明
 
