@@ -44,5 +44,5 @@ module.exports = {
   win: { target: 'nsis' },
   nsis: { oneClick: false, allowToChangeInstallationDirectory: true },
   mac: { target: ['dmg', 'zip'], category: 'public.app-category.utilities' },
-  linux: { target: ['AppImage', 'deb'], category: 'AudioVideo' },
+  linux: { target: ['AppImage', 'deb'], category: 'AudioVideo', maintainer: 'Voxelle <shijing-lu@users.noreply.github.com>' },
 };

@@ -1,6 +1,7 @@
 {
   "name": "local-video-transcriber",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "homepage": "https://github.com/shijing-lu/Voxelle",
   "private": true,
   "author": "Local Video Transcriber",
   "type": "module",

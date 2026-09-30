@@ -43,7 +43,8 @@ if (!denoCached) {
   if (hash(bytes) !== denoZipHash) throw new Error('Deno ZIP SHA-256 校验失败；文件未写入');
   const zip = join(process.cwd(), 'vendor', 'deno.zip');
   await writeFile(zip, bytes);
-  const extracted = spawnSync('tar.exe', ['-xf', zip, '-C', join(process.cwd(), 'vendor')], { windowsHide: true, encoding: 'utf8' });
+  const nativeTar = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe');
+  const extracted = spawnSync(nativeTar, ['-xf', zip, '-C', join(process.cwd(), 'vendor')], { windowsHide: true, encoding: 'utf8' });
   if (extracted.status !== 0) throw new Error(`解压 Deno 失败：${extracted.stderr}`);
   await rm(zip, { force: true });
 }
