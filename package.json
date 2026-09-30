@@ -10,7 +10,8 @@
     "build:main": "tsc -p tsconfig.main.json && esbuild src/preload/index.ts --bundle --platform=node --format=cjs --outfile=dist/preload.cjs --external:electron",
     "dev": "npm run build:main && concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev\"",
     "build": "npm run build:main && vite build",
-    "package:win": "npm run build && electron-builder --win nsis",
+    "fetch:yt-dlp": "node scripts/fetch-yt-dlp.mjs",
+    "package:win": "npm run fetch:yt-dlp && npm run build && electron-builder --win nsis",
     "test": "npm run build:main && node --test",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit"
   },
@@ -36,7 +37,7 @@
   },
   "build": {
     "appId": "local.video.transcriber",
-    "productName": "音频转文本",
+    "productName": "Voxelle",
     "electronDownload": { "mirror": "https://npmmirror.com/mirrors/electron/" },
     "directories": { "output": "release" },
     "files": ["dist/**/*", "package.json"],
@@ -44,6 +45,10 @@
     "extraResources": [
       { "from": "node_modules/ffmpeg-static/ffmpeg.exe", "to": "bin/ffmpeg.exe" },
       { "from": "node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe", "to": "bin/ffprobe.exe" },
+      { "from": "vendor/yt-dlp.exe", "to": "bin/yt-dlp.exe" },
+      { "from": "vendor/deno.exe", "to": "bin/deno.exe" },
+      { "from": "vendor/deno.LICENSE", "to": "licenses/deno.LICENSE" },
+      { "from": "vendor/yt-dlp.LICENSE", "to": "licenses/yt-dlp.LICENSE" },
       { "from": "node_modules/ffmpeg-static/ffmpeg.exe.LICENSE", "to": "licenses/GPL-3.0.txt" },
       { "from": "node_modules/ffmpeg-static/ffmpeg.exe.README", "to": "licenses/ffmpeg-build-readme.txt" },
       { "from": "THIRD_PARTY_NOTICES.md", "to": "licenses/THIRD_PARTY_NOTICES.md" }

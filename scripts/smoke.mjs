@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
-const executable = resolve(process.argv[2] ?? join('release', 'win-unpacked', '音频转文本.exe'));
+const executable = resolve(process.argv[2] ?? join('release', 'win-unpacked', 'Voxelle.exe'));
 const sandbox = await mkdtemp(join(tmpdir(), 'transcriber-smoke-'));
 const media = join(sandbox, 'two-tracks.mkv');
 const keyFile = join(sandbox, 'key.pem');
@@ -49,7 +49,7 @@ async function waitForPage() {
     try {
       const pages = await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1500) }).then(response => response.json());
       const page = pages.find(item => item.type === 'page' && item.webSocketDebuggerUrl);
-      if (page) return page;
+      if (page && await evaluate(page.webSocketDebuggerUrl, 'document.readyState === "complete" && !!document.body').catch(() => false)) return page;
     } catch { /* Electron is still starting. */ }
     await new Promise(resolve => setTimeout(resolve, 500));
   }
@@ -80,14 +80,14 @@ async function evaluate(url, expression) {
 try {
   const page = await waitForPage();
   const result = await evaluate(page.webSocketDebuggerUrl, '(async () => ({ title: document.title, text: document.body.innerText.slice(0, 500), settings: await window.desktop.getSettings(), jobs: await window.desktop.listJobs(), providers: await window.desktop.listPiProviders() }))()');
-  if (result.title !== '音频转文本' || !result.text.includes('转写任务') || !Array.isArray(result.jobs) || result.providers.length !== 3) {
+  if (result.title !== 'Voxelle' || !result.text.includes('转写任务') || !Array.isArray(result.jobs) || result.providers.length !== 3) {
     throw new Error(`启动检查失败：${JSON.stringify(result)}`);
   }
   const mediaResult = await evaluate(page.webSocketDebuggerUrl, `(async () => {
     const path = ${JSON.stringify(media)};
     const info = await window.desktop.inspectMedia(path);
-    const settings = await window.desktop.saveSettings({provider:'groq',model:'whisper-large-v3-turbo',language:'',customEndpoint:'',conflictMode:'ask'}, 'smoke-test-key');
-    const added = await window.desktop.enqueue([{path, trackIndex:info.tracks[1].index}]);
+    const settings = await window.desktop.saveSettings({provider:'groq',model:'whisper-large-v3-turbo',language:'',customEndpoint:'',conflictMode:'ask',outputDirectory:${JSON.stringify(sandbox)}}, 'smoke-test-key');
+    const added = await window.desktop.enqueue([{path, trackIndex:info.tracks[1].index}], ['txt']);
     await window.desktop.cancelJob(added[0].id);
     const cancelled = await window.desktop.listJobs();
     await window.desktop.retryJob(added[0].id);
@@ -102,9 +102,9 @@ try {
   }
   const jobId = await evaluate(page.webSocketDebuggerUrl, `(async () => {
     const path = ${JSON.stringify(media)};
-    await window.desktop.saveSettings({provider:'custom',model:'mock-timed-asr',language:'',customEndpoint:'https://127.0.0.1:${mockPort}/v1/audio/transcriptions',conflictMode:'ask'}, 'smoke-test-key');
+    await window.desktop.saveSettings({provider:'custom',model:'mock-timed-asr',language:'',customEndpoint:'https://127.0.0.1:${mockPort}/v1/audio/transcriptions',conflictMode:'ask',outputDirectory:${JSON.stringify(sandbox)}}, 'smoke-test-key');
     const info = await window.desktop.inspectMedia(path);
-    const added = await window.desktop.enqueue([{path, trackIndex:info.tracks[1].index}]);
+    const added = await window.desktop.enqueue([{path, trackIndex:info.tracks[1].index}], ['txt','srt','vtt']);
     await window.desktop.startQueue();
     return added[0].id;
   })()`);
@@ -114,16 +114,51 @@ try {
     if (['completed', 'failed'].includes(finalJob?.state)) break;
     await new Promise(resolve => setTimeout(resolve, 500));
   }
-  if (finalJob?.state !== 'completed') throw new Error(`完整转写演练失败：${JSON.stringify(finalJob)}`);
+  if (finalJob?.state !== 'completed' || finalJob.progress !== 100 || finalJob.outputFormats.join(',') !== 'txt,srt,vtt' || !finalJob.batchId) throw new Error(`完整转写演练失败：${JSON.stringify(finalJob)}`);
   const outputText = await readFile(finalJob.outputs.find(path => path.endsWith('.txt')), 'utf8');
   const outputSrt = await readFile(finalJob.outputs.find(path => path.endsWith('.srt')), 'utf8');
   const outputVtt = await readFile(finalJob.outputs.find(path => path.endsWith('.vtt')), 'utf8');
   if (uploads !== 1 || !outputText.includes('完整流程测试') || !outputSrt.includes('00:00:00,250') || !outputVtt.includes('WEBVTT')) {
     throw new Error('完整转写演练输出不符合预期');
   }
+  const previewResult = await evaluate(page.webSocketDebuggerUrl, `(async () => {
+    const text = await window.desktop.readJobTranscript(${JSON.stringify(jobId)});
+    await window.desktop.copyJobTranscript(${JSON.stringify(jobId)});
+    return text.includes('完整流程测试');
+  })()`);
+  if (!previewResult) throw new Error('TXT 预览与复制接口失败');
+  const uiResult = await evaluate(page.webSocketDebuggerUrl, `(async () => {
+    for (let i=0; i<20 && !document.querySelector('.batch-progress'); i++) await new Promise(resolve => setTimeout(resolve, 50));
+    const previewButton = [...document.querySelectorAll('.job-row button')].find(button => button.textContent.includes('查看/复制文本'));
+    previewButton?.click();
+    for (let i=0; i<20 && !document.querySelector('.transcript-preview'); i++) await new Promise(resolve => setTimeout(resolve, 50));
+    const text = document.querySelector('.transcript-preview');
+    const result = {batchProgress:document.querySelector('.batch-progress')?.getAttribute('aria-valuenow'), jobProgress:document.querySelectorAll('.job-progress').length, preview:text?.readOnly && text.value.includes('完整流程测试')};
+    document.querySelector('.transcript-modal .modal-actions button')?.click();
+    return result;
+  })()`);
+  if (uiResult.batchProgress !== '100' || uiResult.jobProgress < 1 || !uiResult.preview) throw new Error(`进度与预览界面检查失败：${JSON.stringify(uiResult)}`);
+  if (process.env.PLATFORM_SMOKE === '1') {
+    const linked = await evaluate(page.webSocketDebuggerUrl, `(async () => {
+      const jobs = await window.desktop.enqueueLinks(['https://www.youtube.com/watch?v=dQw4w9WgXcQ'], ['txt','vtt']);
+      await window.desktop.startQueue();
+      return jobs[0].id;
+    })()`);
+    let linkedJob;
+    for (let i = 0; i < 80; i++) {
+      linkedJob = await evaluate(page.webSocketDebuggerUrl, `(async () => (await window.desktop.listJobs()).find(job => job.id === ${JSON.stringify(linked)}))()`);
+      if (['completed', 'failed'].includes(linkedJob?.state)) break;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    if (linkedJob?.state !== 'completed' || linkedJob.progress !== 100 || linkedJob.extractionMethod !== 'subtitle' || linkedJob.outputs.length !== 2 || linkedJob.outputs.some(path => path.endsWith('.srt')) || uploads !== 1) {
+      throw new Error(`公开视频字幕流程失败：${JSON.stringify(linkedJob)}, uploads=${uploads}`);
+    }
+  }
+  await rm(finalJob.outputs.find(path => path.endsWith('.srt')));
+  await rm(finalJob.outputs.find(path => path.endsWith('.vtt')));
   const queuedId = await evaluate(page.webSocketDebuggerUrl, `(async () => {
-    await window.desktop.saveSettings({provider:'custom',model:'mock-timed-asr',language:'',customEndpoint:'https://127.0.0.1:${mockPort}/v1/audio/transcriptions',conflictMode:'rename'});
-    const added = await window.desktop.enqueue([{path:${JSON.stringify(media)}, trackIndex:0}]);
+    await window.desktop.saveSettings({provider:'custom',model:'mock-timed-asr',language:'',customEndpoint:'https://127.0.0.1:${mockPort}/v1/audio/transcriptions',conflictMode:'skip',outputDirectory:${JSON.stringify(sandbox)}});
+    const added = await window.desktop.enqueue([{path:${JSON.stringify(media)}, trackIndex:0}], ['srt']);
     return added[0].id;
   })()`);
   child.kill();
@@ -140,7 +175,7 @@ try {
     if (['completed', 'failed'].includes(resumedJob?.state)) break;
     await new Promise(resolve => setTimeout(resolve, 500));
   }
-  if (resumedJob?.state !== 'completed' || uploads !== 2) throw new Error(`重启续跑失败：${JSON.stringify(resumedJob)}, uploads=${uploads}`);
+  if (resumedJob?.state !== 'completed' || resumedJob.progress !== 100 || resumedJob.outputs.length !== 1 || !resumedJob.outputs[0].endsWith('.srt') || uploads !== 2) throw new Error(`单格式冲突与重启续跑失败：${JSON.stringify(resumedJob)}, uploads=${uploads}`);
   console.log(JSON.stringify({ title: result.title, provider: result.settings.provider, piProviders: result.providers.map(item => item.id), ...mediaResult, uploads, resumeState: resumedJob.state, outputFiles: finalJob.outputs.map(path => path.slice(path.lastIndexOf('\\') + 1)) }));
 } finally {
   child.kill();

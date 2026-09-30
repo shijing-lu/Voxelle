@@ -7,7 +7,7 @@ import ffprobeStatic from 'ffprobe-static';
 import type { AudioTrack, MediaInfo } from '../shared/types.js';
 import { chunkRange } from './timeline.js';
 
-function binary(name: 'ffmpeg' | 'ffprobe'): string {
+export function binary(name: 'ffmpeg' | 'ffprobe'): string {
   if (app.isPackaged) return join(process.resourcesPath, 'bin', `${name}.exe`);
   const ffmpegPath = typeof ffmpegStatic === 'string' ? ffmpegStatic : ffmpegStatic.default;
   const value = name === 'ffmpeg' ? ffmpegPath : ffprobeStatic.path;
