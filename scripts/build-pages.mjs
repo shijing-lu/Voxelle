@@ -22,7 +22,7 @@ try {
   // The installer is deliberately excluded from the Pages build.
 }
 
-const url = process.env.VOXELLE_R2_DOWNLOAD_URL || '#download';
+const url = process.env.VOXELLE_R2_DOWNLOAD_URL || 'https://pub-a8d81ae922424522a3fbc425da5f9ee2.r2.dev/Voxelle-Setup-0.1.0.exe';
 const release = { ...known, bytes, sha256, url, builtAt: new Date().toISOString() };
 const mediaDir = path.join(root, 'site/public/media');
 await mkdir(mediaDir, { recursive: true });

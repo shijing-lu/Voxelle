@@ -21,4 +21,4 @@
 
 ## 托管提示
 
-此交付保持本地预览。Cloudflare Pages 每个静态文件最大 25 MiB，不能容纳当前 313 MB 安装包。若后续公开，页面可部署至 Pages，安装程序单独托管；免费 R2 额度是每月 10 GB-month 存储、100 万次 A 类操作、1000 万次 B 类操作及免费出站流量。R2 的 `r2.dev` 公共地址限于开发用途，生产访问需要自有域名。正式部署前需把网页下载 URL 改为实际安装包 URL，并重新验收该外链。
+此交付保持本地预览。Cloudflare Pages 每个静态文件最大 25 MiB，不能容纳当前 313 MB 安装包，因此安装程序单独托管在 R2。当前 Pages 构建默认使用 `https://pub-a8d81ae922424522a3fbc425da5f9ee2.r2.dev/Voxelle-Setup-0.1.0.exe`；生产环境可通过 `VOXELLE_R2_DOWNLOAD_URL` 覆盖它。R2 的 `r2.dev` 公共地址限于开发用途，生产访问建议改用自有域名。
